@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -26,14 +25,63 @@
             PRIMERA GENERACIÓN · KANTO · #001 — #151
         </p>
 
+        <div id="user-session" class="user-session hidden">
+            <span id="session-user"></span>
+            <button id="logout-button" type="button">Cerrar sesión</button>
+        </div>
+
     </header>
+
+
+    <section id="auth" class="auth-section">
+
+        <div class="auth-card">
+
+            <div class="auth-tabs">
+                <button id="login-tab" class="auth-tab active" type="button">Iniciar sesión</button>
+                <button id="register-tab" class="auth-tab" type="button">Registrarse</button>
+            </div>
+
+            <form id="login-form" class="auth-form">
+                <h2>Acceso al sistema</h2>
+
+                <label for="login-email">Correo electrónico</label>
+                <input id="login-email" type="email" required autocomplete="email">
+
+                <label for="login-password">Contraseña</label>
+                <input id="login-password" type="password" required autocomplete="current-password">
+
+                <button class="auth-submit" type="submit">Entrar a la Pokédex</button>
+            </form>
+
+            <form id="register-form" class="auth-form hidden">
+                <h2>Crear cuenta</h2>
+
+                <label for="register-name">Nombre</label>
+                <input id="register-name" type="text" required autocomplete="name">
+
+                <label for="register-email">Correo electrónico</label>
+                <input id="register-email" type="email" required autocomplete="email">
+
+                <label for="register-password">Contraseña</label>
+                <input id="register-password" type="password" minlength="4" required autocomplete="new-password">
+
+                <button class="auth-submit" type="submit">Crear cuenta</button>
+            </form>
+
+            <p id="auth-message" class="auth-message" role="status"></p>
+            <p class="auth-notice">Demo académica: los datos se guardan únicamente en este navegador.</p>
+
+        </div>
+
+    </section>
 
 
     <!-- ==========================================
          MAIN
     =========================================== -->
 
-    <main>
+    <main id="app-content" class="protected-content hidden">
 
         <section class="intro">
 
@@ -63,7 +111,7 @@
          FOOTER
     =========================================== -->
 
-    <footer>
+    <footer class="protected-content hidden">
 
         <p>
             <strong>POKÉDEX KANTO</strong>
@@ -85,6 +133,109 @@
     =========================================== -->
 
     <script>
+
+        const auth = document.getElementById("auth");
+        const loginForm = document.getElementById("login-form");
+        const registerForm = document.getElementById("register-form");
+        const loginTab = document.getElementById("login-tab");
+        const registerTab = document.getElementById("register-tab");
+        const authMessage = document.getElementById("auth-message");
+        const userSession = document.getElementById("user-session");
+        const sessionUser = document.getElementById("session-user");
+        const logoutButton = document.getElementById("logout-button");
+        const usersKey = "pokedurexUsuarios";
+        const sessionKey = "pokedurexSesion";
+
+        const getUsers = () => JSON.parse(localStorage.getItem(usersKey) || "[]");
+
+        const showMessage = (message, isError = true) => {
+            authMessage.textContent = message;
+            authMessage.classList.toggle("success", !isError);
+        };
+
+        const showLogin = () => {
+            loginForm.classList.remove("hidden");
+            registerForm.classList.add("hidden");
+            loginTab.classList.add("active");
+            registerTab.classList.remove("active");
+            showMessage("");
+        };
+
+        const showRegister = () => {
+            loginForm.classList.add("hidden");
+            registerForm.classList.remove("hidden");
+            loginTab.classList.remove("active");
+            registerTab.classList.add("active");
+            showMessage("");
+        };
+
+        const showApp = (user) => {
+            auth.classList.add("hidden");
+            document.querySelectorAll(".protected-content").forEach((element) => {
+                element.classList.remove("hidden");
+            });
+            userSession.classList.remove("hidden");
+            sessionUser.textContent = `Usuario: ${user.name}`;
+        };
+
+        const closeSession = () => {
+            localStorage.removeItem(sessionKey);
+            document.querySelectorAll(".protected-content").forEach((element) => {
+                element.classList.add("hidden");
+            });
+            userSession.classList.add("hidden");
+            auth.classList.remove("hidden");
+            loginForm.reset();
+            showLogin();
+        };
+
+        loginTab.addEventListener("click", showLogin);
+        registerTab.addEventListener("click", showRegister);
+
+        registerForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            const name = document.getElementById("register-name").value.trim();
+            const email = document.getElementById("register-email").value.trim().toLowerCase();
+            const password = document.getElementById("register-password").value;
+            const users = getUsers();
+
+            if (users.some((user) => user.email === email)) {
+                showMessage("Ya existe una cuenta con ese correo.");
+                return;
+            }
+
+            users.push({ name, email, password });
+            localStorage.setItem(usersKey, JSON.stringify(users));
+            registerForm.reset();
+            showLogin();
+            showMessage("Cuenta creada. Ya puedes iniciar sesión.", false);
+        });
+
+        loginForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            const email = document.getElementById("login-email").value.trim().toLowerCase();
+            const password = document.getElementById("login-password").value;
+            const user = getUsers().find((item) => item.email === email && item.password === password);
+
+            if (!user) {
+                showMessage("Correo o contraseña incorrectos.");
+                return;
+            }
+
+            localStorage.setItem(sessionKey, JSON.stringify(user));
+            loginForm.reset();
+            showApp(user);
+        });
+
+        logoutButton.addEventListener("click", closeSession);
+
+        const savedSession = JSON.parse(localStorage.getItem(sessionKey) || "null");
+
+        if (savedSession) {
+            showApp(savedSession);
+        }
 
         const pokemon = [
 
@@ -406,7 +557,7 @@
         });
 
     </script>
-   <p>Desplegado automáticamente con AWS Lambda 🚀</p>
+    <p class="deployment-note protected-content hidden">Desplegado automáticamente con AWS Lambda</p>
 </body>
 </html>
 
